@@ -5,8 +5,8 @@ const { execFileSync, spawn } = require('child_process');
 
 const overlaySource = String.raw`
 (() => {
-  if (window.__antigravityZhPatchInstalled === 7) return;
-  window.__antigravityZhPatchInstalled = 7;
+  if (window.__antigravityZhPatchInstalled === 10) return;
+  window.__antigravityZhPatchInstalled = 10;
 
   const phrases = new Map([
     ['New Conversation', '新建对话'],
@@ -28,6 +28,10 @@ const overlaySource = String.raw`
     ['Search conversations (by name or Cascade ID)', '搜索对话（按名称或 Cascade ID）'],
     ['Search all convos...', '搜索全部对话...'],
     ['Search by name or Cascade ID...', '按名称或 Cascade ID 搜索...'],
+    ['Weekly Limit', '每周额度'],
+    ['Five Hour Limit', '五小时额度'],
+    ['Claude and GPT models', 'Claude 和 GPT 模型'],
+    ['Within each group, models share a weekly limit and a 5-hour limit. Quota is consumed proportionally to the cost of the tokens. Thus, limits will last longer with shorter tasks or using more cost-effective models. The 5-hour limit smooths out aggregate demand to fairly distribute global capacity across all users, while your weekly limit is tied directly to your individual tier.', '在每个组内，模型共享每周额度和 5 小时额度。额度消耗与 Token 成本成正比。因此，处理较短的任务或使用更具成本效益的模型，能让额度使用更久。5 小时额度用于平滑总需求，在所有用户间公平分配全球算力；而您的每周额度则直接与您的个人等级挂钩。'],
     ['Mark as Read', '标记为已读'],
     ['Mark as Unread', '标记为未读'],
     ['Mark As Read', '标记为已读'],
@@ -388,6 +392,21 @@ const overlaySource = String.raw`
     ['Enable Task', '启用任务'],
     ['Restart Task', '重启任务'],
     ['View your available model quota and AI credits. Model quota refreshes periodically based on your plan. Enable AI Credit Overages to continue using models when your quota is exhausted.', '查看可用的模型额度和 AI 积分。模型额度会根据你的计划定期刷新。启用 AI 积分超额使用后，可在额度耗尽时继续使用模型。'],
+    ['Install IDE', '安装 IDE'],
+    ['Load older messages', '加载历史消息'],
+    ['Undo changes up to this point', '撤销到此处的更改'],
+    ['Ran', '已运行'],
+    ['Run', '运行'],
+    ['Overview', '总览'],
+    ['Review', '审核'],
+    ['Auxiliary Pane', '辅助面板'],
+    ['Subagents', '子智能体'],
+    ['Files Changed', '已更改文件'],
+    ['Artifacts', '产物'],
+    ['Walkthrough', '演练指南'],
+    ['Uploads', '上传的文件'],
+    ['Working...', '工作中...'],
+    ['You have hit your limit.', '您已达到额度上限。'],
   ]);
 
   const patterns = [
@@ -397,6 +416,16 @@ const overlaySource = String.raw`
     [/^(\d+)d$/g, '$1天'],
     [/^(\d+)m$/g, '$1分钟'],
     [/^(\d+)s$/g, '$1秒'],
+    [/(\d+) days/g, '$1 天'],
+    [/(\d+) day/g, '$1 天'],
+    [/(\d+) hours/g, '$1 小时'],
+    [/(\d+) hour/g, '$1 小时'],
+    [/(\d+) minutes/g, '$1 分钟'],
+    [/(\d+) minute/g, '$1 分钟'],
+    [/You have used some of your weekly limit, it will fully refresh in (.*?)\./g, '您已使用部分每周额度，它将在 $1 后完全刷新。'],
+    [/You have used some of your 5-hour limit, it will fully refresh in (.*?)\./g, '您已使用部分五小时额度，它将在 $1 后完全刷新。'],
+    [/You have hit your 5-hour limit, so the weekly limit does not currently apply\. Your 5-hour limit will refresh in (.*?)\./g, '您已达到五小时额度上限，目前每周额度不适用。您的五小时额度将在 $1 后刷新。'],
+    [/You have hit your 5-hour limit, it will refresh in (.*?)\. If on a supported paid plan, you can use AI credits in the interim\./g, '您已达到五小时额度上限，它将在 $1 后刷新。如果您有支持的付费计划，期间可使用 AI Credits 积分。'],
     [/Worked for (\d+)s/g, '已工作 $1 秒'],
     [/浏览器 设置/g, '浏览器设置'],
     [/浏览器 操作权限/g, '浏览器操作权限'],
@@ -459,6 +488,8 @@ const overlaySource = String.raw`
     [/\((Thinking)\)/g, '(思考)'],
     [/Gemini ([^(]+) \((High|Medium|Low)\)/g, (_match, model, effort) => 'Gemini ' + model.trim() + ' (' + (phrases.get(effort) ?? effort) + ')'],
     [/Antigravity has been redesigned to put agents first with new capabilities\. If you'd still like a code editor, you can download it as a separate app named Antigravity IDE\./g, 'Antigravity 已重新设计为智能体优先，并加入了新能力。如果你仍然需要代码编辑器，可以下载名为 Antigravity IDE 的独立应用。'],
+    [/Load older messages, showing (\d+) of (\d+)/g, '加载历史消息，正在显示第 $1 条，共 $2 条'],
+    [/Thought for (\d+)s/g, '思考了 $1 秒'],
   ];
 
   function translate(value) {
@@ -485,15 +516,19 @@ const overlaySource = String.raw`
 
   function shouldSkip(node) {
     const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-    return !!element?.closest?.('script, style, textarea, code, pre, .xterm, .monaco-editor');
+    return !!element?.closest?.('script, style, textarea, code, pre, .xterm, .monaco-editor, [contenteditable="true"]');
   }
+
+
 
   function translateElement(element) {
     for (const attr of ['aria-label', 'title', 'placeholder', 'alt']) {
       const value = element.getAttribute?.(attr);
       if (!value) continue;
       const translated = translate(value);
-      if (translated !== value) element.setAttribute(attr, translated);
+      if (translated !== value) {
+        element.setAttribute(attr, translated);
+      }
     }
   }
 
@@ -501,8 +536,11 @@ const overlaySource = String.raw`
     if (!root) return;
     if (shouldSkip(root)) return;
     if (root.nodeType === Node.TEXT_NODE) {
-      const translated = translate(root.nodeValue || '');
-      if (translated !== root.nodeValue) root.nodeValue = translated;
+      const val = root.nodeValue || '';
+      const translated = translate(val);
+      if (translated !== val) {
+        root.nodeValue = translated;
+      }
       return;
     }
     if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return;
@@ -511,8 +549,11 @@ const overlaySource = String.raw`
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       if (shouldSkip(node)) continue;
       if (node.nodeType === Node.TEXT_NODE) {
-        const translated = translate(node.nodeValue || '');
-        if (translated !== node.nodeValue) node.nodeValue = translated;
+        const val = node.nodeValue || '';
+        const translated = translate(val);
+        if (translated !== val) {
+          node.nodeValue = translated;
+        }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         translateElement(node);
       }
@@ -546,66 +587,163 @@ const overlaySource = String.raw`
   } else {
     run();
   }
+
+  // Feature: Inline Select-to-Translate
+  let translateBtn = null;
+
+  document.addEventListener('mouseup', (e) => {
+    setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection ? selection.toString().trim() : '';
+      
+      if (!text || !/[A-Za-z]/.test(text)) {
+        if (translateBtn) translateBtn.style.display = 'none';
+        return;
+      }
+      
+      if (translateBtn && translateBtn.contains(e.target)) return;
+
+      if (!translateBtn) {
+        translateBtn = document.createElement('div');
+        translateBtn.innerHTML = '译';
+        translateBtn.style.cssText = 'position:fixed;z-index:9999999;background:#10b981;color:white;padding:2px 8px;border-radius:4px;cursor:pointer;font-size:12px;box-shadow:0 2px 5px rgba(0,0,0,0.2);user-select:none;font-weight:bold;font-family:sans-serif;';
+        document.body.appendChild(translateBtn);
+        
+        translateBtn.addEventListener('mousedown', async (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          
+          const sel = window.getSelection();
+          if (!sel.rangeCount) return;
+          const range = sel.getRangeAt(0);
+          const selectedText = sel.toString().trim();
+          if (!selectedText) return;
+          
+          translateBtn.innerHTML = '...';
+          
+          let translated = '';
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+            const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=' + encodeURIComponent(selectedText);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            const data = await res.json();
+            translated = data[0].map(x => x[0]).join('');
+          } catch (err) {
+            try {
+              const url2 = 'https://api.mymemory.translated.net/get?langpair=en|zh&q=' + encodeURIComponent(selectedText);
+              const res2 = await fetch(url2, { signal: AbortSignal.timeout(3000) });
+              const data2 = await res2.json();
+              if (data2 && data2.responseData && data2.responseData.translatedText) {
+                translated = data2.responseData.translatedText;
+              } else {
+                translated = '翻译失败，请检查网络。';
+              }
+            } catch (err2) {
+              translated = '翻译接口连接超时（尝试使用外网或重试）。';
+            }
+          }
+          
+          translateBtn.style.display = 'none';
+          
+          if (translated && !translated.startsWith('翻译失败') && !translated.startsWith('翻译接口连接超时')) {
+            const span = document.createElement('span');
+            span.className = 'antigravity-inline-translation';
+            span.style.cssText = 'background-color: rgba(16, 185, 129, 0.2); color: #059669; border-bottom: 1px dashed #10b981; cursor: pointer; padding: 0 4px; border-radius: 4px; font-weight: bold; transition: all 0.2s;';
+            span.dataset.original = selectedText;
+            span.textContent = translated;
+            span.title = "点击还原为英文";
+            
+            try {
+              range.deleteContents();
+              range.insertNode(span);
+              sel.removeAllRanges();
+            } catch(e) {}
+          }
+        });
+      }
+      
+      translateBtn.style.left = (e.clientX + 5) + 'px';
+      translateBtn.style.top = (e.clientY - 25) + 'px';
+      translateBtn.style.display = 'block';
+      translateBtn.innerHTML = '译';
+    }, 10);
+  });
+
+  document.addEventListener('mousedown', (e) => {
+    if (translateBtn && !translateBtn.contains(e.target)) {
+      translateBtn.style.display = 'none';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const span = e.target.closest('.antigravity-inline-translation');
+    if (span && span.dataset.original) {
+      const originalText = span.dataset.original;
+      const textNode = document.createTextNode(originalText);
+      span.parentNode.replaceChild(textNode, span);
+    }
+  });
+
 })();
 `;
 
-function runPowerShell(command) {
+// Lightweight native process detection (avoids heavy PowerShell spawns)
+function antigravityPids() {
   try {
-    return execFileSync('powershell.exe', [
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-Command',
-      command,
-    ], { encoding: 'utf8', windowsHide: true });
+    const output = execFileSync('tasklist.exe', ['/nh', '/fi', 'imagename eq Antigravity.exe'], { encoding: 'utf8', windowsHide: true });
+    const pids = [];
+    for (const line of output.split('\n')) {
+      const parts = line.trim().split(/\s+/);
+      if (parts[0] && parts[0].toLowerCase() === 'antigravity.exe') {
+        const pid = Number(parts[1]);
+        if (Number.isInteger(pid) && pid > 0) pids.push(pid);
+      }
+    }
+    return pids;
   } catch {
-    return '';
+    return [];
   }
 }
 
-function antigravityPids() {
-  const output = runPowerShell('Get-Process -Name Antigravity -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id');
-  return output.trim().split(/\s+/).filter(Boolean);
-}
-
 function launchAntigravity() {
-  const command = [
-    '$paths = @(',
-    '  "$env:LOCALAPPDATA\\Programs\\Antigravity\\Antigravity.exe",',
-    '  "$env:LOCALAPPDATA\\Antigravity\\Antigravity.exe",',
-    '  "$env:ProgramFiles\\Antigravity\\Antigravity.exe",',
-    '  "${env:ProgramFiles(x86)}\\Antigravity\\Antigravity.exe"',
-    ');',
-    '$target = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1;',
-    'if ($target) { Start-Process -FilePath $target } else { Start-Process Antigravity }',
-  ].join('\n');
-
+  const candidates = [
+    `${process.env.LOCALAPPDATA}\\Programs\\Antigravity\\Antigravity.exe`,
+    `${process.env.LOCALAPPDATA}\\Antigravity\\Antigravity.exe`,
+    `${process.env.ProgramFiles}\\Antigravity\\Antigravity.exe`,
+  ];
+  const { existsSync } = require('fs');
+  const target = candidates.find(p => existsSync(p)) || 'Antigravity';
   try {
-    spawn('powershell.exe', [
-      '-NoProfile',
-      '-ExecutionPolicy',
-      'Bypass',
-      '-Command',
-      command,
-    ], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    spawn(target, [], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
   } catch {
+    // Fallback: try shell start
+    try { execFileSync('cmd.exe', ['/c', 'start', '', 'Antigravity'], { windowsHide: true }); } catch {}
   }
 }
 
 function debugPorts() {
+  const pids = new Set(antigravityPids());
+  if (pids.size === 0) return [];
   const ports = new Set();
-  for (const pid of antigravityPids()) {
-    const command = [
-      `Get-NetTCPConnection -State Listen -OwningProcess ${pid} -ErrorAction SilentlyContinue |`,
-      "Where-Object { $_.LocalAddress -eq '127.0.0.1' -or $_.LocalAddress -eq '0.0.0.0' -or $_.LocalAddress -eq '::1' } |",
-      'Select-Object -ExpandProperty LocalPort',
-    ].join(' ');
-    const output = runPowerShell(command);
-    for (const value of output.trim().split(/\s+/).filter(Boolean)) {
-      const port = Number(value);
-      if (Number.isInteger(port)) ports.add(port);
+  try {
+    const output = execFileSync('netstat.exe', ['-ano'], { encoding: 'utf8', windowsHide: true });
+    for (const line of output.split('\n')) {
+      const parts = line.trim().split(/\s+/);
+      if (parts.length < 5) continue;
+      if (parts[0].toUpperCase() !== 'TCP') continue;
+      if (parts[3] !== 'LISTENING') continue;
+      const pid = Number(parts[4]);
+      if (!pids.has(pid)) continue;
+      const localAddr = parts[1];
+      const colonIndex = localAddr.lastIndexOf(':');
+      if (colonIndex !== -1) {
+        const port = Number(localAddr.slice(colonIndex + 1));
+        if (Number.isInteger(port) && port > 0) ports.add(port);
+      }
     }
-  }
+  } catch {}
   return [...ports];
 }
 
@@ -671,11 +809,57 @@ async function injectOnce() {
   return count;
 }
 
+const activeConnections = new Map();
+
 async function watch() {
   if (!isAntigravityRunning()) launchAntigravity();
   for (;;) {
-    await injectOnce().catch(() => {});
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const running = isAntigravityRunning();
+
+    if (!running) {
+      // 客户端已关闭：清理所有连接，进入省电长休眠（5秒一次轻检测）
+      for (const [id, ws] of activeConnections) {
+        try { ws.close(); } catch {}
+        activeConnections.delete(id);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      continue;
+    }
+
+    // 客户端运行中：维持常驻连接，快速扫描（2秒）
+    try {
+      const activeIds = new Set();
+      for (const port of debugPorts()) {
+        const targets = await targetsForPort(port);
+        for (const target of targets) {
+          activeIds.add(target.id);
+          if (!activeConnections.has(target.id)) {
+            const ws = new WebSocket(target.webSocketDebuggerUrl);
+            activeConnections.set(target.id, ws);
+
+            ws.onopen = async () => {
+              try {
+                await cdpCall(ws, 'Page.addScriptToEvaluateOnNewDocument', { source: overlaySource });
+                await cdpCall(ws, 'Runtime.evaluate', { expression: overlaySource, awaitPromise: false });
+              } catch {}
+            };
+
+            ws.onclose = () => { activeConnections.delete(target.id); };
+            ws.onerror = () => { try { ws.close(); } catch {} activeConnections.delete(target.id); };
+          }
+        }
+      }
+
+      // 清理已关闭的页面连接
+      for (const [id, ws] of activeConnections) {
+        if (!activeIds.has(id)) {
+          try { ws.close(); } catch {}
+          activeConnections.delete(id);
+        }
+      }
+    } catch {}
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 

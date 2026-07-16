@@ -388,6 +388,20 @@ const overlaySource = String.raw`
     ['Enable Task', '启用任务'],
     ['Restart Task', '重启任务'],
     ['View your available model quota and AI credits. Model quota refreshes periodically based on your plan. Enable AI Credit Overages to continue using models when your quota is exhausted.', '查看可用的模型额度和 AI 积分。模型额度会根据你的计划定期刷新。启用 AI 积分超额使用后，可在额度耗尽时继续使用模型。'],
+    ['Install IDE', '安装 IDE'],
+    ['Load older messages', '加载历史消息'],
+    ['Undo changes up to this point', '撤销到此处的更改'],
+    ['Ran', '已运行'],
+    ['Run', '运行'],
+    ['Overview', '总览'],
+    ['Review', '审核'],
+    ['Auxiliary Pane', '辅助面板'],
+    ['Subagents', '子智能体'],
+    ['Files Changed', '已更改文件'],
+    ['Artifacts', '产物'],
+    ['Walkthrough', '演练指南'],
+    ['Uploads', '上传的文件'],
+    ['Working...', '工作中...'],
   ]);
 
   const patterns = [
@@ -459,6 +473,8 @@ const overlaySource = String.raw`
     [/\((Thinking)\)/g, '(思考)'],
     [/Gemini ([^(]+) \((High|Medium|Low)\)/g, (_match, model, effort) => 'Gemini ' + model.trim() + ' (' + (phrases.get(effort) ?? effort) + ')'],
     [/Antigravity has been redesigned to put agents first with new capabilities\. If you'd still like a code editor, you can download it as a separate app named Antigravity IDE\./g, 'Antigravity 已重新设计为智能体优先，并加入了新能力。如果你仍然需要代码编辑器，可以下载名为 Antigravity IDE 的独立应用。'],
+    [/Load older messages, showing (\d+) of (\d+)/g, '加载历史消息，正在显示第 $1 条，共 $2 条'],
+    [/Thought for (\d+)s/g, '思考了 $1 秒'],
   ];
 
   function translate(value) {
@@ -488,12 +504,58 @@ const overlaySource = String.raw`
     return !!element?.closest?.('script, style, textarea, code, pre, .xterm, .monaco-editor');
   }
 
+  const translationCache = new Map();
+
+  async function translateOnline(text) {
+    if (translationCache.has(text)) return translationCache.get(text);
+    
+    // 1. Try Google Translate first (works globally, but blocked in China)
+    try {
+      const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=' + encodeURIComponent(text);
+      const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+      const data = await res.json();
+      if (data && data[0]) {
+        const translated = data[0].map(x => x[0]).join('');
+        translationCache.set(text, translated);
+        return translated;
+      }
+    } catch (e) {
+      // Google Translate failed (probably due to firewall in China or timeout)
+    }
+
+    // 2. Fall back to MyMemory Translate (works in China and globally)
+    try {
+      const url = 'https://api.mymemory.translated.net/get?langpair=en|zh&q=' + encodeURIComponent(text);
+      const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+      const data = await res.json();
+      if (data && data.responseData && data.responseData.translatedText) {
+        const translated = data.responseData.translatedText;
+        translationCache.set(text, translated);
+        return translated;
+      }
+    } catch (e) {
+      // MyMemory also failed
+    }
+
+    return text;
+  }
+
   function translateElement(element) {
     for (const attr of ['aria-label', 'title', 'placeholder', 'alt']) {
       const value = element.getAttribute?.(attr);
       if (!value) continue;
       const translated = translate(value);
-      if (translated !== value) element.setAttribute(attr, translated);
+      if (translated !== value) {
+        element.setAttribute(attr, translated);
+      } else {
+        if (/[A-Za-z]/.test(value) && value.includes(' ') && value.length > 5 && !/[\u4e00-\u9fa5]/.test(value)) {
+          translateOnline(value).then((onlineVal) => {
+            if (onlineVal && onlineVal !== value && element.getAttribute?.(attr) === value) {
+              element.setAttribute(attr, onlineVal);
+            }
+          });
+        }
+      }
     }
   }
 
@@ -501,8 +563,19 @@ const overlaySource = String.raw`
     if (!root) return;
     if (shouldSkip(root)) return;
     if (root.nodeType === Node.TEXT_NODE) {
-      const translated = translate(root.nodeValue || '');
-      if (translated !== root.nodeValue) root.nodeValue = translated;
+      const val = root.nodeValue || '';
+      const translated = translate(val);
+      if (translated !== val) {
+        root.nodeValue = translated;
+      } else {
+        if (/[A-Za-z]/.test(val) && val.includes(' ') && val.length > 5 && !/[\u4e00-\u9fa5]/.test(val)) {
+          translateOnline(val).then((onlineVal) => {
+            if (onlineVal && onlineVal !== val && root.nodeValue === val) {
+              root.nodeValue = onlineVal;
+            }
+          });
+        }
+      }
       return;
     }
     if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_NODE) return;
@@ -511,8 +584,20 @@ const overlaySource = String.raw`
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       if (shouldSkip(node)) continue;
       if (node.nodeType === Node.TEXT_NODE) {
-        const translated = translate(node.nodeValue || '');
-        if (translated !== node.nodeValue) node.nodeValue = translated;
+        const val = node.nodeValue || '';
+        const translated = translate(val);
+        if (translated !== val) {
+          node.nodeValue = translated;
+        } else {
+          if (/[A-Za-z]/.test(val) && val.includes(' ') && val.length > 5 && !/[\u4e00-\u9fa5]/.test(val)) {
+            const targetNode = node;
+            translateOnline(val).then((onlineVal) => {
+              if (onlineVal && onlineVal !== val && targetNode.nodeValue === val) {
+                targetNode.nodeValue = onlineVal;
+              }
+            });
+          }
+        }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         translateElement(node);
       }
@@ -627,13 +712,54 @@ async function injectOnce() {
   return count;
 }
 
+const activeConnections = new Map();
+
 async function watch() {
   if (!mainPid()) {
     spawn('/usr/bin/open', ['-a', 'Antigravity'], { detached: true, stdio: 'ignore' }).unref();
   }
   for (;;) {
-    await injectOnce().catch(() => {});
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      const activeIds = new Set();
+      for (const port of debugPorts()) {
+        const targets = await targetsForPort(port);
+        for (const target of targets) {
+          activeIds.add(target.id);
+          if (!activeConnections.has(target.id)) {
+            const ws = new WebSocket(target.webSocketDebuggerUrl);
+            activeConnections.set(target.id, ws);
+            
+            ws.onopen = async () => {
+              try {
+                await cdpCall(ws, 'Page.addScriptToEvaluateOnNewDocument', { source: overlaySource });
+                await cdpCall(ws, 'Runtime.evaluate', { expression: overlaySource, awaitPromise: false });
+              } catch (err) {
+                // ignore
+              }
+            };
+            
+            ws.onclose = () => {
+              activeConnections.delete(target.id);
+            };
+            
+            ws.onerror = () => {
+              ws.close();
+              activeConnections.delete(target.id);
+            };
+          }
+        }
+      }
+      
+      for (const [id, ws] of activeConnections) {
+        if (!activeIds.has(id)) {
+          ws.close();
+          activeConnections.delete(id);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 

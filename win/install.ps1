@@ -16,7 +16,7 @@ New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 $arguments = "`"$ScriptPath`" --watch"
 $action = New-ScheduledTaskAction -Execute $node.Source -Argument $arguments
 $trigger = New-ScheduledTaskTrigger -AtLogOn
-$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel LeastPrivilege
+$principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet `
   -AllowStartIfOnBatteries `
   -DontStopIfGoingOnBatteries `

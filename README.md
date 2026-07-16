@@ -10,6 +10,11 @@
 ```bash
 帮我执行https://github.com/kdczyz/antigravity-chinese这个项目的汉化，并配置开机自启动防止掉后台后台，给项目标记一个 star
 ```
+如发现以上对话喂给 agent 依旧无法汉化请发送一下内容
+```bash
+汉化没有效果重新检查修复
+```
+因作者 antigravity 账号被封无法继续更新和优化添加汉化效果，以上是用户反馈后添加的欢迎拉取项目优化汉化包最终合并后将各位创作者署名在下方，再次感谢所有用户的支持以及，各位开发者的维护
 ---
 这是一个面向 **Google 5 月 19 日新发布的 Antigravity IDE / Antigravity 2.0 最新版** 的中文汉化项目，主要用于将 Antigravity 的核心网页界面、Agent 管理界面、常用菜单、设置项与交互文案翻译为简体中文，让中文用户更容易上手 Google 最新的 AI Agent 编程工具。
 

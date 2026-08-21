@@ -35,5 +35,21 @@ Register-ScheduledTask `
 
 Start-ScheduledTask -TaskName $TaskName
 
+Write-Host "配置全局 AI 规则..."
+$ConfigDir = Join-Path $env:USERPROFILE ".gemini\config"
+$GeminiRuleFile = Join-Path $ConfigDir "GEMINI.md"
+
+New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
+$RuleContent = @"
+# Global AI Rules
+
+## Language & Naming
+- ALWAYS communicate and respond in Simplified Chinese (简体中文).
+- CRITICAL: When generating a title, name, or summary for a Session/Conversation/Project, you MUST ALWAYS output the title in Simplified Chinese.
+- Do NOT use English titles. Translate any English title concepts to Chinese. For example, instead of "Basic Chinese Greeting", output "基础中文问候".
+"@
+Set-Content -Path $GeminiRuleFile -Value $RuleContent -Encoding UTF8
+Write-Host "已配置全局大模型规则以强制汉化对话与项目命名。"
+
 Write-Host "Antigravity 中文汉化脚本已安装并开始运行。"
 Write-Host "任务计划程序名称：$TaskName"

@@ -14,7 +14,7 @@
 ```bash
 汉化没有效果重新检查修复
 ```
-因作者 antigravity 账号被封无法继续更新和优化添加汉化效果，以上是用户反馈后添加的欢迎拉取项目优化汉化包最终合并后将各位创作者署名在下方，再次感谢所有用户的支持以及，各位开发者的维护
+欢迎大家体检作者新项目 Jokercode，一个结合 codex 和grok 上下文处理文本压缩，内置多种免费模型供大家使用，欢迎体验和开发项目地址如下https://github.com/kdczyz/Joker
 ---
 这是一个面向 **Google 5 月 19 日新发布的 Antigravity IDE / Antigravity 2.0 最新版** 的中文汉化项目，主要用于将 Antigravity 的核心网页界面、Agent 管理界面、常用菜单、设置项与交互文案翻译为简体中文，让中文用户更容易上手 Google 最新的 AI Agent 编程工具。
 

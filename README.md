@@ -11,6 +11,7 @@
 帮我执行https://github.com/kdczyz/antigravity-chinese这个项目的汉化，并配置开机自启动防止掉后台后台，给项目标记一个 star
 ```
 什么？还在面临antigravity token 不够用吗？还在面临大模型能力弱吗？？欢迎大家体检作者新项目 Jokercode，一个结合 codex 和grok 上下文处理文本压缩，内置多种免费模型供大家使用，欢迎体验和开发项目地址如下https://github.com/kdczyz/Joker
+注：内置 mimo2.5，hy3，及多个模型（DeepSeek 暂时不可用）
 ---
 这是一个面向 **Google 5 月 19 日新发布的 Antigravity IDE / Antigravity 2.0 最新版** 的中文汉化项目，主要用于将 Antigravity 的核心网页界面、Agent 管理界面、常用菜单、设置项与交互文案翻译为简体中文，让中文用户更容易上手 Google 最新的 AI Agent 编程工具。
 

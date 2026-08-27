@@ -155,11 +155,3 @@ antigravity-chinese/
 
 <img src="assets/wechat_contact.jpg" width="220" />
 
-## ☕️ 捐赠与支持
-
-如果你觉得这个汉化项目对你有帮助，欢迎请作者喝杯咖啡！非常感谢你的支持！❤️
-
-| 支付宝 (Alipay) | 微信支付 (WeChat Pay) |
-| :---: | :---: |
-| <img src="assets/alipay.jpg" width="280" /> | <img src="assets/wechat.jpg" width="280" /> |
-

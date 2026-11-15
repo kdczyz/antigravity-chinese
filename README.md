@@ -157,3 +157,18 @@ antigravity-chinese/
 > - **系统级外观限制**：macOS 顶部菜单栏与系统状态栏属于系统原生组件，不在脚本网页端注入处理范围内。
 > - **非官方项目声明**：本项目仅用于学习、交流与本地化体验优化，不代表 Google 官方立场。
 
+
+---
+
+## 🙏 贡献者感谢
+
+感谢以下社区贡献者为本项目付出的时间与智慧（按贡献先后排序）：
+
+| 贡献者 | 贡献内容 |
+| :--- | :--- |
+| [@ZHUOLIN0928](https://github.com/ZHUOLIN0928) (AidenLin) | v2.18.1 核心重构：物理隔离 Lexical 输入框，修复语音/英文输入时焦点被重置的问题；重构全词精确匹配引擎；大幅扩充中文词库（[#10](https://github.com/kdczyz/antigravity-chinese/pull/10)） |
+| [@abc1812645224-alt](https://github.com/abc1812645224-alt) (阿松大) | 提出 Dict.json 解耦方案与全 UI 覆盖的 v3.0 汉化补丁，以及 AI 思考过程的客户端翻译实践（[#5](https://github.com/kdczyz/antigravity-chinese/pull/5) / [#6](https://github.com/kdczyz/antigravity-chinese/pull/6)） |
+
+同时感谢所有提交 Issue、反馈问题与补充词条的用户 —— 每一条反馈都是这个项目持续更新的动力。
+
+如果你也想参与贡献，欢迎提交 Pull Request 或 Issue 👉 [贡献指南](https://github.com/kdczyz/antigravity-chinese/issues)

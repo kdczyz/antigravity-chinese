@@ -15,6 +15,21 @@
   <true/>
   <key>KeepAlive</key>
   <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>LimitLoadToSessionType</key>
+  <string>Aqua</string>
+  <key>WorkingDirectory</key>
+  <string>__PATCH_DIR__</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>__NODE_DIR__:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>__HOME__</string>
+  </dict>
   <key>StandardOutPath</key>
   <string>__LOG_DIR__/zhpatch.log</string>
   <key>StandardErrorPath</key>

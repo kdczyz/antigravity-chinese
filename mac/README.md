@@ -3,7 +3,7 @@
 [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-apple.svg)]()
 [![LaunchAgent](https://img.shields.io/badge/Startup-LaunchAgent-orange.svg)]()
 
-本目录提供了针对 macOS 版 **Antigravity** 的专属汉化守护进程实现。它通过创建用户级别的 `LaunchAgent` 守护，在您每次登录系统后自动在后台运行，并在 Antigravity 启动时动态注入中文翻译词表。
+本目录提供了针对 macOS 版 **Antigravity** 的专属汉化守护进程实现（v2.18.1，词库 2836 条）。它通过创建用户级别的 `LaunchAgent` 守护，在您每次登录系统后自动在后台运行，并在 Antigravity 启动时动态注入中文翻译词表。
 
 ---
 
@@ -52,6 +52,6 @@ cd mac
 
 - 📄 `bin/antigravity-zh-patch.js`：核心汉化逻辑，包含了注入程序与中文翻译对照字典。
 - 📄 `launchagents/com.a1412.antigravity.zhpatch.plist`：用于常驻后台的 `LaunchAgent` 模板文件。
-- 📂 `logs/`：包含后台运行的标准输出与错误日志（`stdout.log`, `stderr.log`），方便调试排查。
+- 📂 `logs/`：包含后台运行的标准输出与错误日志（`zhpatch.log`、`zhpatch.err.log`），方便调试排查。
 - 📄 `install.sh`：自动配置、注册并加载守护进程的安装脚本。
 - 📄 `uninstall.sh`：停止并安全卸载守护进程的清理脚本。
